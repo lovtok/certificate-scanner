@@ -17,7 +17,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-image: url('https://res.cloudinary.com/dmrhe3chc/image/upload/v1770999319/trinidax_school_certificate_suu4u7.jpg');
+            background-image: url('https://res.cloudinary.com/dmrhe3chc/image/upload/v1771073287/Blue_and_Gold_Modern_Participation_Certificate_A4_2_i57osm.png');
             background-size: cover;
             background-repeat: no-repeat;
             min-height: 100vh;
@@ -31,7 +31,7 @@
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.63);
+            background: rgba(15, 23, 42, 0.404);
             backdrop-filter: blur(8px);
             z-index: -1;
         }
@@ -279,7 +279,7 @@
     <p>Securely validate Trinidax academic records.</p>
     
     <div class="search-box" id="searchBox">
-        <input type="text" id="certInput" placeholder="Enter ID (e.g. TRIN-00-00)" onkeypress="if(event.key === 'Enter') checkID()">
+        <input type="text" id="certInput" placeholder="Enter ID (e.g. TRIN-26-001)" onkeypress="if(event.key === 'Enter') checkID()">
         <button onclick="checkID()" id="verifyBtn">Verify</button>
     </div>
     <div id="lockoutMessage" class="lockout-message"></div>
@@ -300,7 +300,7 @@
             <h2 style="color: var(--dark);">How to Verify</h2>
             <p style="font-size: 1.1rem; line-height: 1.6;">
                 Check below the <strong>QR Code</strong> on your physical certificate. 
-                You will see a code like <span class="highlight-id">TRIN-00-00</span>. 
+                You will see a code like <span class="highlight-id">TRIN-26-001</span>. 
                 Input it in the search box to view your record online.
             </p>
             <button onclick="closeModal('resultModal')" style="background: var(--dark); color: white; border: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;">Got it!</button>
@@ -365,33 +365,40 @@
 
 <script>
     // -------------------- DATABASE --------------------
-    // Each certificate can now have an optional 'qr' field containing the URL
-    // of a pre‑generated static QR code image (PNG, SVG, etc.).
-    // If 'qr' is provided, that image will be shown; otherwise a dynamic QR
-    // code is generated from the certificate ID.
+    // Each certificate now has its own unique PDF link.
+    // For Google Drive links, we'll automatically extract the file ID
+    // to use for viewing (via Google Drive viewer) and downloading.
     const database = {
         "TRIN-26-001": {
             name: "Alfred Godwin",
             course: "Full-Stack Web Engineering",
-            preview: "https://res.cloudinary.com/dmrhe3chc/image/upload/v1770999319/trinidax_school_certificate_suu4u7.jpg",
-            pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", // replace with actual PDF
-            qr: "" // e.g. "https://example.com/qr/trin-26-001.png" – leave empty to use dynamic QR
+            preview: "https://res.cloudinary.com/dmrhe3chc/image/upload/v1771073287/Blue_and_Gold_Modern_Participation_Certificate_A4_2_i57osm.png",
+            pdf: "https://drive.google.com/file/d/1IjzufUzZOFQfYtbDmPAcL7mIHdlfZ-9W/view?usp=sharing", // Replace with actual unique link
+            qr: "https://res.cloudinary.com/dmrhe3chc/image/upload/v1771074770/Afred-qr_fw78bv.png" // optional static QR code URL
         },
         "TRIN-26-002": {
             name: "Emily Chen",
             course: "Data Science & AI",
-            preview: "https://res.cloudinary.com/dmrhe3chc/image/upload/v1770999319/trinidax_school_certificate_suu4u7.jpg",
-            pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-            qr: "" // add static QR URL if desired
+            preview: "https://res.cloudinary.com/dmrhe3chc/image/upload/v1771073286/Blue_and_Gold_Modern_Participation_Certificate_A4_1_zdjj4c.png",
+            pdf: "https://drive.google.com/file/d/1fxNWA8KtlZi9Uz_nKKZZwlq0QA9S2rMM/view?usp=sharing", // different link
+            qr: "https://res.cloudinary.com/dmrhe3chc/image/upload/v1771074770/Emily-qr_eazloz.png"
         },
         "TRIN-26-003": {
             name: "Michael Lee",
             course: "Cybersecurity Fundamentals",
-            preview: "https://res.cloudinary.com/dmrhe3chc/image/upload/v1770999319/trinidax_school_certificate_suu4u7.jpg",
-            pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-            qr: "" // add static QR URL if desired
+            preview: "https://res.cloudinary.com/dmrhe3chc/image/upload/v1771073287/Blue_and_Gold_Modern_Participation_Certificate_A4_xbnjlw.png",
+            pdf: "https://drive.google.com/file/d/1i-eS8p5jy2VRjjumn1ZhqVTBY0ykYu83/view?usp=sharing", // different link
+            qr: "https://res.cloudinary.com/dmrhe3chc/image/upload/v1771072820/qr_download_xsbz8x.png"
         }
     };
+
+    // Helper to extract Google Drive file ID from various URL formats
+    function getGoogleDriveFileId(url) {
+        if (!url) return null;
+        // Format: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+        const match = url.match(/\/file\/d\/([^\/?]+)/);
+        return match ? match[1] : null;
+    }
 
     // -------------------- LOCKOUT STATE --------------------
     let wrongAttempts = parseInt(localStorage.getItem('wrongAttempts')) || 0;
@@ -544,15 +551,13 @@
             document.getElementById('studentName').innerText = database[id].name;
             document.getElementById('courseName').innerText = database[id].course;
             document.getElementById('certPreview').src = database[id].preview;
-            window.currentPdfUrl = database[id].pdf;
+            window.currentPdfUrl = database[id].pdf; // store for later use
 
             // ----- Set the QR code image -----
             const qrImg = document.getElementById('qrCodeImg');
             if (database[id].qr) {
-                // Use the pre‑generated static QR code if provided
                 qrImg.src = database[id].qr;
             } else {
-                // Otherwise fall back to dynamic generation
                 const baseUrl = window.location.href.split('?')[0];
                 const verificationUrl = `${baseUrl}?id=${encodeURIComponent(id)}`;
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(verificationUrl)}`;
@@ -570,14 +575,26 @@
 
     // -------------------- CERTIFICATE ACTIONS --------------------
     function viewCertificate() {
-        if (window.currentPdfUrl) {
-            const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(window.currentPdfUrl)}&embedded=true`;
-            window.open(viewerUrl, '_blank');
+        if (!window.currentPdfUrl) return;
+        const fileId = getGoogleDriveFileId(window.currentPdfUrl);
+        if (fileId) {
+            // Open in Google Drive viewer
+            window.open(`https://drive.google.com/file/d/${fileId}/preview`, '_blank');
+        } else {
+            // Fallback: open the original URL
+            window.open(window.currentPdfUrl, '_blank');
         }
     }
 
     function downloadCertificate() {
-        if (window.currentPdfUrl) {
+        if (!window.currentPdfUrl) return;
+        const fileId = getGoogleDriveFileId(window.currentPdfUrl);
+        if (fileId) {
+            // Direct download link for Google Drive
+            const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            window.open(downloadUrl, '_blank');
+        } else {
+            // For non-Google Drive URLs, attempt to trigger download via anchor
             const a = document.createElement('a');
             a.href = window.currentPdfUrl;
             a.download = 'certificate.pdf';
